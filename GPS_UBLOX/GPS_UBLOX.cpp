@@ -313,7 +313,83 @@ long GPS_UBLOX_Class::join_2_bytes(unsigned char Buffer[])
   return(longUnion.dword);
 }
 
-void GPS_UBLOX_Class::translate_tow(long ms, long week_number, long nanis) {
+String GPS_UBLOX_Class::GPSTOWtoUTC(long secs)
+{//converts the GPS Time of the Week presented by the UBLOX GPS
+ // to the UTC "packed integer" format
+
+ //Useful constants
+ #define SEC_PER_DAY 86400
+ #define SEC_PER_HOUR 3600
+ #define SEC_PER_MINUTE 60
+ #define HOURS_PER_DAY 24
+ #define MINUTES_PER_DAY 1440
+ #define MINUTES_PER_HOUR 60
+ String UTC_pack;
+ long sleft;
+ int offsetday = secs/SEC_PER_DAY;//today is tuesday
+// 1514615313
+//Serial.println(offsetday);
+ sleft = secs - (offsetday * SEC_PER_DAY); //57300 secs left today
+// Serial.println(sleft);
+int hs = sleft/SEC_PER_HOUR;//15 hours today
+//Serial.println(hs);
+int sremainder;
+sremainder = sleft - (hs * SEC_PER_HOUR); // 3300 unused seconds... YET!
+//Serial.println(sremainder);
+int mins = sremainder/SEC_PER_MINUTE; //55 and in this case, there are no seconds remaining
+//Serial.println(mins);
+long stime = sremainder - (mins*SEC_PER_MINUTE); //This would be used if there were seconds left over
+//Serial.println(stime);
+if (hs < 10) {UTC_pack += "0";}
+UTC_pack += hs; 
+UTC_pack += ":" ;
+if (mins < 10) {UTC_pack += "0";}
+UTC_pack += mins;
+UTC_pack += ":";
+if (stime < 10) {UTC_pack += "0";}
+UTC_pack += stime;
+UTC_pack += " ";
+
+
+return UTC_pack;
+}
+
+String GPS_UBLOX_Class::MjdToDate (long Mjd, long *Year, long *Month, long *Day)
+{
+    long J = 0;
+    long CD = 0;
+    long Y = 0;
+    long M = 0;
+
+    J = Mjd + 2400001 + 68569;
+    CD = 4 * J / 146097;
+    J = J - (146097 * CD + 3) / 4;
+    Y = 4000 * (J + 1) / 1461001;
+    J = J - 1461 * Y / 4 + 31;
+    M = 80 * J / 2447;
+    *Day = J - 2447 * M / 80;
+    J = M / 11;
+    *Month = M + 2 - (12 * J);
+    *Year = 100 * (CD - 49) + Y + J;
+}
+
+long GPS_UBLOX_Class::GpsToMjd(long GpsCycle, long GpsWeek, long GpsSeconds)
+{
+  long GpsDays;
+	    GpsDays = ((GpsCycle * 1024) + GpsWeek) * 7 + (GpsSeconds / 86400);
+    return DateToMjd(1980, 1, 6) + GpsDays;
+}
+
+long GPS_UBLOX_Class::DateToMjd (long Year, long Month, long Day)
+{
+      return
+        367 * Year
+        - 7 * (Year + (Month + 9) / 12) / 4
+        - 3 * ((Year + (Month - 9) / 7) / 100 + 1) / 4
+        + 275 * Month / 9
+        + Day
+        + 1721028
+        - 2400000;
 }
 
 long GPS_UBLOX_Class::one_byte(unsigned char Buffer[])
@@ -333,6 +409,158 @@ char* GPS_UBLOX_Class::bytes_to_decimal(char Buffer[])
 int number;
 return(itoa(number, Buffer, 10));
 }
+
+void GPS_UBLOX_Class::packatize(){
+  String thisDatax;
+    long altitude = Altitude/10;
+    long latitude = (Lattitude*3.6)/10;
+    long longitude = (Longitude*3.6)/10;
+    long nanoseconds = towSubMsR + (1000000*(GPS.towMsR%1000));
+      
+      String lat;
+      lat += " ";
+      if (latitude > 0) {
+        lat += "+";
+      }
+      if (latitude < 0) {
+        lat += "-";
+      }
+       for (int i = 10; i <= 100000000; i *= 10) {
+            if (abs(latitude) < i) {
+              ns += "0";
+            }
+          }     
+ /*     if (abs(latitude) < 100000000) {
+        lat += "0";
+        if (abs(latitude) < 10000000) {
+          lat += "0";
+          if (abs(latitude) < 1000000) {
+            lat += "0";
+            if (abs(latitude) < 100000) {
+              lat += "0";
+              if (abs(latitude) < 10000) {
+                lat += "0";
+                if (abs(latitude) < 1000) {
+                  lat += "0";
+                  if (abs(latitude) < 100) {
+                    lat += "0";
+                    if (abs(latitude) < 10) {
+                      lat += "0";
+                  }
+                }   
+              }
+            }
+          }
+        }
+      }
+    }*/
+    lat += abs(latitude);
+    lat += " ";
+   // thisData6 += " ";
+    String lon;
+          if (longitude > 0) {
+        lon += "+";
+      }
+      if (longitude < 0) {
+        lon += "-";
+      }
+       for (int i = 10; i <= 100000000; i *= 10) {
+            if (abs(longitude) < i) {
+              ns += "0";
+            }
+          }      
+   /*   if (abs(longitude) < 100000000) {
+        lon += "0";
+        if (abs(longitude) < 10000000) {
+          lon += "0";
+          if (abs(longitude) < 1000000) {
+            lon += "0";
+            if (abs(longitude) < 100000) {
+              lon += "0";
+              if (abs(longitude) < 10000) {
+                lon += "0";
+                if (abs(longitude) < 1000) {
+                  lon += "0";
+                  if (abs(longitude) < 100) {
+                    lon += "0";
+                    if (abs(longitude) < 10) {
+                      lon += "0";
+                  }
+                }   
+              }
+            }
+          }
+        }
+      }
+    }*/
+    lon += abs(longitude);
+    lon += " ";
+      String alt; //-0007736
+          if (altitude > 0) {
+        alt += "+";
+      }
+      if (altitude < 0) {
+        alt += "-";
+      }
+       for (int i = 10; i <= 1000000; i *= 10) {
+            if (abs(altitude) < i) {
+              ns += "0";
+            }
+          }
+      /*    if (abs(altitude) < 1000000) {
+            alt += "0";
+            if (abs(altitude) < 100000) {
+              alt += "0";
+              if (abs(altitude) < 10000) {
+                alt += "0";
+                if (abs(altitude) < 1000) {
+                  alt += "0";
+                  if (abs(altitude) < 100) {
+                    alt += "0";
+                    if (abs(altitude) < 10) {
+                      alt += "0";
+                  }
+                }   
+              }
+            }
+          }
+        }*/
+    alt += abs(altitude);
+    alt += " ";
+          String ns; //-0007736
+          for (int i = 10; i <= 100000000; i *= 10) {
+            if (abs(nanoseconds) < i) {
+              ns += "0";
+            }
+          }
+    /*  if (abs(nanoseconds) < 100000000) {
+          ns += "0";
+        if (abs(nanoseconds) < 10000000) {
+          ns += "0";
+          if (abs(nanoseconds) < 1000000) {
+            ns += "0";
+            if (abs(nanoseconds) < 100000) {
+              ns += "0";
+              if (abs(nanoseconds) < 10000) {
+                ns += "0";
+                if (abs(nanoseconds) < 1000) {
+                  ns += "0";
+                  if (abs(nanoseconds) < 100) {
+                    ns += "0";
+                    if (abs(nanoseconds) < 10) {
+                      ns += "0";
+                  }
+                }   
+              }
+            }
+          }
+        }
+      }
+    }*/
+    ns += abs(nanoseconds);
+ thisDatax = date + time + unitid + lat + lon + alt + ns;
+	thisDatax.toCharArray(thisData, 65);
+	
 /****************************************************************
  * 
  ****************************************************************/
