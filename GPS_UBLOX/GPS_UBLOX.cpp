@@ -56,8 +56,9 @@ GPS_UBLOX_Class::GPS_UBLOX_Class()
 
 // Public Methods //////////////////////////////////////////////////////////////
 void GPS_UBLOX_Class::Init(void)
-{
-
+{	
+	String unitid = "01111";
+	long GpsCycle = 0;
 	int hour = 0;
 	int minute = 0;
 	int sow = 0;
@@ -165,7 +166,7 @@ void GPS_UBLOX_Class::Read(void)
       case 8:
         UBX_ck_b=data;   
     //   Serial.println(UBX_ck_b);
-	
+
         if((ck_a==UBX_ck_a)&&(ck_b==UBX_ck_b))   
 	  		parse_ubx_gps();       
         else
@@ -283,6 +284,245 @@ break;
 }
 }
 
+void GPS_UBLOX_Class::send_Message(int ID) {
+if (ID == 1337) {
+int gps_set_sucess=0; 
+int setNav4[] = {// 0xB5, 0x62, 0x06, 0x01, 0x08, 0x00, 0x01, 0x02, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x13, 0xBE
+  0xB5, 0x62, 0x06, 0x11, 0x02, 0x00, 0x08, 0x00, 0x21, 0x91, 0xB5, 0x62, 0x06, 0x09, 0x0D, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF, 0xFF, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x07, 0x21, 0xAF };
+//     while(i < 3)
+//{
+ // i++;
+    sendUBX(setNav4, sizeof(setNav4)/sizeof(int));
+    gps_set_sucess=getUBX_ACK(setNav4);
+  //}
+  gps_set_sucess=0; 
+   int setNav5[] = {// 0xB5, 0x62, 0x06, 0x00, 0x14, 0x00, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x07, 0x00, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x27, 0xCE 
+  0xB5, 0x62, 0x06, 0x00, 0x14, 0x00, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x07, 0x00, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x27, 0xCE };
+//     while(i < 3)
+//{
+ // i++;
+    sendUBX(setNav5, sizeof(setNav5)/sizeof(int));
+    gps_set_sucess=getUBX_ACK(setNav5);
+  //}
+  gps_set_sucess=0; 
+  gps_set_sucess=0; 
+  //int i = 0;
+   int setNav2[] = {//0xB5, 0x62, 0x06, 0x01, 0x08, 0x00, 0x0D, 0x03, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x20, 0x25
+  0xB5, 0x62, 0x06, 0x01, 0x08, 0x00, 0x0D, 0x03, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x20, 0x25 };
+//     while(i < 3)
+//{
+ // i++;
+    sendUBX(setNav2, sizeof(setNav2)/sizeof(int));
+    gps_set_sucess=getUBX_ACK(setNav2);
+  //}
+  //i = 0;
+  gps_set_sucess=0; 
+ // int i = 0;
+   int setNav[] = {// 0xB5, 0x62, 0x06, 0x01, 0x08, 0x00, 0x01, 0x02, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x13, 0xBE
+  0xB5, 0x62, 0x06, 0x01, 0x08, 0x00, 0x01, 0x02, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x13, 0xBE };
+//     while(i < 3)
+//{
+ // i++;
+    sendUBX(setNav, sizeof(setNav)/sizeof(int));
+    gps_set_sucess=getUBX_ACK(setNav);
+  //}
+  //i = 0;
+  gps_set_sucess=0; 
+  }
+}
+
+ String GPS_UBLOX_Class::URLEncode(const char* msg)
+{
+    const char *hex = "0123456789abcdef";
+    String encodedMsg = "";
+
+    while (*msg!='\0'){
+        if( ('a' <= *msg && *msg <= 'z')
+                || ('A' <= *msg && *msg <= 'Z')
+                || ('0' <= *msg && *msg <= '9') ) {
+            encodedMsg += *msg;
+        } else {
+            encodedMsg += '%';
+            encodedMsg += hex[*msg >> 4];
+            encodedMsg += hex[*msg & 15];
+        }
+        msg++;
+    }
+    return encodedMsg;
+}
+
+void GPS_UBLOX_Class::packatize(){
+	String thisDatax;
+	String time;
+    String date;
+    long altitude = Altitude/10;
+    long latitude = (Lattitude*3.6)/10;
+    long longitude = (Longitude*3.6)/10;
+    long nanoseconds = towSubMsR + (1000000*(GPS.towMsR%1000));
+          date = "";
+                Mjd = GpsToMjd(GpsCycle, wnR, towMsR/1000);
+            MjdToDate(Mjd, &Year, &Month, &Day);
+            if (Month < 10){
+              date += "0";
+            }
+           date += Month;
+           date += "/" ;
+            if (Day < 10){
+              date += "0";
+            } 
+            date += Day;
+            date += "/" ;
+            if (Year - 2000 < 10) {
+              date += "0";
+            }
+            date += (Year-2000);
+            date += " ";
+           time = GPSTOWtoUTC(towMsR/1000);
+      String lat;
+      lat += " ";
+      if (latitude > 0) {
+        lat += "+";
+      }
+      if (latitude < 0) {
+        lat += "-";
+      }
+       for (int i = 10; i <= 100000000; i *= 10) {
+            if (abs(latitude) < i) {
+              lat += "0";
+            }
+          }     
+ /*     if (abs(latitude) < 100000000) {
+        lat += "0";
+        if (abs(latitude) < 10000000) {
+          lat += "0";
+          if (abs(latitude) < 1000000) {
+            lat += "0";
+            if (abs(latitude) < 100000) {
+              lat += "0";
+              if (abs(latitude) < 10000) {
+                lat += "0";
+                if (abs(latitude) < 1000) {
+                  lat += "0";
+                  if (abs(latitude) < 100) {
+                    lat += "0";
+                    if (abs(latitude) < 10) {
+                      lat += "0";
+                  }
+                }   
+              }
+            }
+          }
+        }
+      }
+    }*/
+    lat += abs(latitude);
+    lat += " ";
+   // thisData6 += " ";
+    String lon;
+          if (longitude > 0) {
+        lon += "+";
+      }
+      if (longitude < 0) {
+        lon += "-";
+      }
+       for (int i = 10; i <= 100000000; i *= 10) {
+            if (abs(longitude) < i) {
+              lon += "0";
+            }
+          }      
+   /*   if (abs(longitude) < 100000000) {
+        lon += "0";
+        if (abs(longitude) < 10000000) {
+          lon += "0";
+          if (abs(longitude) < 1000000) {
+            lon += "0";
+            if (abs(longitude) < 100000) {
+              lon += "0";
+              if (abs(longitude) < 10000) {
+                lon += "0";
+                if (abs(longitude) < 1000) {
+                  lon += "0";
+                  if (abs(longitude) < 100) {
+                    lon += "0";
+                    if (abs(longitude) < 10) {
+                      lon += "0";
+                  }
+                }   
+              }
+            }
+          }
+        }
+      }
+    }*/
+    lon += abs(longitude);
+    lon += " ";
+      String alt; //-0007736
+          if (altitude > 0) {
+        alt += "+";
+      }
+      if (altitude < 0) {
+        alt += "-";
+      }
+       for (int i = 10; i <= 1000000; i *= 10) {
+            if (abs(altitude) < i) {
+              alt += "0";
+            }
+          }
+      /*    if (abs(altitude) < 1000000) {
+            alt += "0";
+            if (abs(altitude) < 100000) {
+              alt += "0";
+              if (abs(altitude) < 10000) {
+                alt += "0";
+                if (abs(altitude) < 1000) {
+                  alt += "0";
+                  if (abs(altitude) < 100) {
+                    alt += "0";
+                    if (abs(altitude) < 10) {
+                      alt += "0";
+                  }
+                }   
+              }
+            }
+          }
+        }*/
+    alt += abs(altitude);
+    alt += " ";
+          String ns; //-0007736
+          for (int i = 10; i <= 100000000; i *= 10) {
+            if (abs(nanoseconds) < i) {
+              ns += "0";
+            }
+          }
+    /*  if (abs(nanoseconds) < 100000000) {
+          ns += "0";
+        if (abs(nanoseconds) < 10000000) {
+          ns += "0";
+          if (abs(nanoseconds) < 1000000) {
+            ns += "0";
+            if (abs(nanoseconds) < 100000) {
+              ns += "0";
+              if (abs(nanoseconds) < 10000) {
+                ns += "0";
+                if (abs(nanoseconds) < 1000) {
+                  ns += "0";
+                  if (abs(nanoseconds) < 100) {
+                    ns += "0";
+                    if (abs(nanoseconds) < 10) {
+                      ns += "0";
+                  }
+                }   
+              }
+            }
+          }
+        }
+      }
+    }*/
+    ns += abs(nanoseconds);
+ thisDatax = date + time + unitid + lat + lon + alt + ns;
+	thisDatax.toCharArray(thisData, 65);
+}
+
 /****************************************************************
  * 
  ****************************************************************/
@@ -354,7 +594,7 @@ UTC_pack += " ";
 return UTC_pack;
 }
 
-String GPS_UBLOX_Class::MjdToDate (long Mjd, long *Year, long *Month, long *Day)
+void GPS_UBLOX_Class::MjdToDate (long Mjd, long *Year, long *Month, long *Day)
 {
     long J = 0;
     long CD = 0;
@@ -410,157 +650,73 @@ int number;
 return(itoa(number, Buffer, 10));
 }
 
-void GPS_UBLOX_Class::packatize(){
-  String thisDatax;
-    long altitude = Altitude/10;
-    long latitude = (Lattitude*3.6)/10;
-    long longitude = (Longitude*3.6)/10;
-    long nanoseconds = towSubMsR + (1000000*(GPS.towMsR%1000));
-      
-      String lat;
-      lat += " ";
-      if (latitude > 0) {
-        lat += "+";
+ // Send a byte array of UBX protocol to the GPS
+void GPS_UBLOX_Class::sendUBX(int *MSG, int len) {
+  for(int i=0; i<len; i++) {
+    Serial.write(MSG[i]);
+   // Serial.print(MSG[i], HEX);
+  }
+  Serial.println();
+}
+
+// Calculate expected UBX ACK packet and parse UBX response from GPS
+boolean GPS_UBLOX_Class::getUBX_ACK(int *MSG) {
+  int b;
+  int ackByteID = 0;
+  int ackPacket[10];
+  unsigned long startTime = millis();
+  //Serial.print(" * Reading ACK response: ");
+ 
+  // Construct the expected ACK packet    
+  ackPacket[0] = 0xB5;	// header
+  ackPacket[1] = 0x62;	// header
+  ackPacket[2] = 0x05;	// class
+  ackPacket[3] = 0x01;	// id
+  ackPacket[4] = 0x02;	// length
+  ackPacket[5] = 0x00;
+  ackPacket[6] = MSG[2];	// ACK class
+  ackPacket[7] = MSG[3];	// ACK id
+  ackPacket[8] = 0;		// CK_A
+  ackPacket[9] = 0;		// CK_B
+ 
+  // Calculate the checksums
+  for (int i=2; i<8; i++) {
+    ackPacket[8] = ackPacket[8] + ackPacket[i];
+    ackPacket[9] = ackPacket[9] + ackPacket[8];
+  }
+ 
+  while (1) {
+ 
+    // Test for success
+    if (ackByteID > 9) {
+      // All packets in order!
+      Serial.println(" (SUCCESS!)");
+      return true;
+    }
+ 
+    // Timeout if no valid response in 3 seconds
+    if (millis() - startTime > 3000) { 
+      Serial.println(" (FAILED!)");
+      return false;
+    }
+ 
+    // Make sure data is available to read
+    if (Serial.available()) {
+      b = Serial.read();
+ 
+      // Check that bytes arrive in sequence as per expected ACK packet
+      if (b == ackPacket[ackByteID]) { 
+        ackByteID++;
+        Serial.print(b, HEX);
+      } 
+      else {
+        ackByteID = 0;	// Reset and look again, invalid order
       }
-      if (latitude < 0) {
-        lat += "-";
-      }
-       for (int i = 10; i <= 100000000; i *= 10) {
-            if (abs(latitude) < i) {
-              ns += "0";
-            }
-          }     
- /*     if (abs(latitude) < 100000000) {
-        lat += "0";
-        if (abs(latitude) < 10000000) {
-          lat += "0";
-          if (abs(latitude) < 1000000) {
-            lat += "0";
-            if (abs(latitude) < 100000) {
-              lat += "0";
-              if (abs(latitude) < 10000) {
-                lat += "0";
-                if (abs(latitude) < 1000) {
-                  lat += "0";
-                  if (abs(latitude) < 100) {
-                    lat += "0";
-                    if (abs(latitude) < 10) {
-                      lat += "0";
-                  }
-                }   
-              }
-            }
-          }
-        }
-      }
-    }*/
-    lat += abs(latitude);
-    lat += " ";
-   // thisData6 += " ";
-    String lon;
-          if (longitude > 0) {
-        lon += "+";
-      }
-      if (longitude < 0) {
-        lon += "-";
-      }
-       for (int i = 10; i <= 100000000; i *= 10) {
-            if (abs(longitude) < i) {
-              ns += "0";
-            }
-          }      
-   /*   if (abs(longitude) < 100000000) {
-        lon += "0";
-        if (abs(longitude) < 10000000) {
-          lon += "0";
-          if (abs(longitude) < 1000000) {
-            lon += "0";
-            if (abs(longitude) < 100000) {
-              lon += "0";
-              if (abs(longitude) < 10000) {
-                lon += "0";
-                if (abs(longitude) < 1000) {
-                  lon += "0";
-                  if (abs(longitude) < 100) {
-                    lon += "0";
-                    if (abs(longitude) < 10) {
-                      lon += "0";
-                  }
-                }   
-              }
-            }
-          }
-        }
-      }
-    }*/
-    lon += abs(longitude);
-    lon += " ";
-      String alt; //-0007736
-          if (altitude > 0) {
-        alt += "+";
-      }
-      if (altitude < 0) {
-        alt += "-";
-      }
-       for (int i = 10; i <= 1000000; i *= 10) {
-            if (abs(altitude) < i) {
-              ns += "0";
-            }
-          }
-      /*    if (abs(altitude) < 1000000) {
-            alt += "0";
-            if (abs(altitude) < 100000) {
-              alt += "0";
-              if (abs(altitude) < 10000) {
-                alt += "0";
-                if (abs(altitude) < 1000) {
-                  alt += "0";
-                  if (abs(altitude) < 100) {
-                    alt += "0";
-                    if (abs(altitude) < 10) {
-                      alt += "0";
-                  }
-                }   
-              }
-            }
-          }
-        }*/
-    alt += abs(altitude);
-    alt += " ";
-          String ns; //-0007736
-          for (int i = 10; i <= 100000000; i *= 10) {
-            if (abs(nanoseconds) < i) {
-              ns += "0";
-            }
-          }
-    /*  if (abs(nanoseconds) < 100000000) {
-          ns += "0";
-        if (abs(nanoseconds) < 10000000) {
-          ns += "0";
-          if (abs(nanoseconds) < 1000000) {
-            ns += "0";
-            if (abs(nanoseconds) < 100000) {
-              ns += "0";
-              if (abs(nanoseconds) < 10000) {
-                ns += "0";
-                if (abs(nanoseconds) < 1000) {
-                  ns += "0";
-                  if (abs(nanoseconds) < 100) {
-                    ns += "0";
-                    if (abs(nanoseconds) < 10) {
-                      ns += "0";
-                  }
-                }   
-              }
-            }
-          }
-        }
-      }
-    }*/
-    ns += abs(nanoseconds);
- thisDatax = date + time + unitid + lat + lon + alt + ns;
-	thisDatax.toCharArray(thisData, 65);
-	
+ 
+    }
+  }
+}
+
 /****************************************************************
  * 
  ****************************************************************/
