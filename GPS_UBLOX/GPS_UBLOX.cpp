@@ -57,7 +57,9 @@ GPS_UBLOX_Class::GPS_UBLOX_Class()
 // Public Methods //////////////////////////////////////////////////////////////
 void GPS_UBLOX_Class::Init(void)
 {	
-	String unitid = "01111";
+	String unitid = "00000";
+	String thisDatax = "";
+	char thisData[65];	
 	long GpsCycle = 0;
 	int hour = 0;
 	int minute = 0;
@@ -71,6 +73,8 @@ void GPS_UBLOX_Class::Init(void)
 	int month = 0;
 	int weeks = 0;
 	int year = 0;
+	long towSubMsR = 0;
+	long towMsR = 0;
 	PosData = 0;
 	ck_a=0;
 	ck_b=0;
@@ -286,16 +290,40 @@ break;
 
 void GPS_UBLOX_Class::send_Message(int ID) {
 if (ID == 1337) {
+//Serial.end();
+Serial.begin(9600);
 int gps_set_sucess=0; 
-int setNav4[] = {// 0xB5, 0x62, 0x06, 0x01, 0x08, 0x00, 0x01, 0x02, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x13, 0xBE
+int setNav499[] = {
+0xB5, 0x62, 0x06, 0x00, 0x14, 0x00, 0x01, 0x00, 0x00, 0x00, 0xD0, 0x08, 0x00, 0x00, 0x00, 0x96, 0x00, 0x00, 0x01, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x8B, 0x54};
+ // 0xB5, 0x62, 0x06, 0x11, 0x02, 0x00, 0x08, 0x00, 0x21, 0x91, 0xB5, 0x62, 0x06, 0x09, 0x0D, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF, 0xFF, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x07, 0x21, 0xAF };
+//     while(i < 3)
+//{
+ // i++;
+    sendUBX(setNav499, sizeof(setNav499)/sizeof(int));
+    gps_set_sucess=getUBX_ACK(setNav499);
+  //}
+  
+  Serial.end();
+  Serial.begin(38400);
+  Serial.print("Success: ");
+  Serial.println(getUBX_ACK(setNav499));
+  gps_set_sucess=0;
+ /* int setNav4[] = {
+//0xB5, 0x62, 0x06, 0x00, 0x14, 0x00, 0x01, 0x00, 0x00, 0x00, 0xD0, 0x08, 0x00, 0x00, 0x00, 0x96, 0x00, 0x00, 0x01, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x8B, 0x54
   0xB5, 0x62, 0x06, 0x11, 0x02, 0x00, 0x08, 0x00, 0x21, 0x91, 0xB5, 0x62, 0x06, 0x09, 0x0D, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF, 0xFF, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x07, 0x21, 0xAF };
 //     while(i < 3)
 //{
  // i++;
     sendUBX(setNav4, sizeof(setNav4)/sizeof(int));
-    gps_set_sucess=getUBX_ACK(setNav4);
-  //}
-  gps_set_sucess=0; 
+    gps_set_sucess=getUBX_ACK(setNav4);*/
+ int setNav49[] = {
+//0xB5, 0x62, 0x06, 0x00, 0x14, 0x00, 0x01, 0x00, 0x00, 0x00, 0xD0, 0x08, 0x00, 0x00, 0x00, 0x96, 0x00, 0x00, 0x01, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x8B, 0x54
+  0xB5, 0x62, 0x06, 0x08, 0x06, 0x00, 0xC8, 0x00, 0x01, 0x00, 0x01, 0x00, 0xDE, 0x6A    };
+//     while(i < 3)
+//{
+ // i++;
+    sendUBX(setNav49, sizeof(setNav49)/sizeof(int));
+    gps_set_sucess=getUBX_ACK(setNav49);
    int setNav5[] = {// 0xB5, 0x62, 0x06, 0x00, 0x14, 0x00, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x07, 0x00, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x27, 0xCE 
   0xB5, 0x62, 0x06, 0x00, 0x14, 0x00, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x07, 0x00, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x27, 0xCE };
 //     while(i < 3)
@@ -352,13 +380,16 @@ int setNav4[] = {// 0xB5, 0x62, 0x06, 0x01, 0x08, 0x00, 0x01, 0x02, 0x00, 0x01, 
 }
 
 void GPS_UBLOX_Class::packatize(){
-	String thisDatax;
 	String time;
     String date;
+	thisDatax = "";
     long altitude = Altitude/10;
     long latitude = (Lattitude*3.6)/10;
     long longitude = (Longitude*3.6)/10;
-    long nanoseconds = towSubMsR + (1000000*(GPS.towMsR%1000));
+    long nanosecondsD = towSubMsR + (1000000*(towMsR%1000));
+	long nanosecondsD2 = towSubMsF + (1000000*(towMsF%1000));
+
+	//Serial.println("CK: 0");
           date = "";
                 Mjd = GpsToMjd(GpsCycle, wnR, towMsR/1000);
             MjdToDate(Mjd, &Year, &Month, &Day);
@@ -377,7 +408,9 @@ void GPS_UBLOX_Class::packatize(){
             }
             date += (Year-2000);
             date += " ";
+		//	Serial.println("CK: 0.5");
            time = GPSTOWtoUTC(towMsR/1000);
+		//   Serial.println("CK: 0.75");
       String lat;
       lat += " ";
       if (latitude > 0) {
@@ -386,11 +419,12 @@ void GPS_UBLOX_Class::packatize(){
       if (latitude < 0) {
         lat += "-";
       }
-       for (int i = 10; i <= 100000000; i *= 10) {
+       for (long i = 10; i <= 100000000; i *= 10) {
             if (abs(latitude) < i) {
               lat += "0";
             }
           }     
+		//  Serial.println("ck: 1");
  /*     if (abs(latitude) < 100000000) {
         lat += "0";
         if (abs(latitude) < 10000000) {
@@ -425,7 +459,7 @@ void GPS_UBLOX_Class::packatize(){
       if (longitude < 0) {
         lon += "-";
       }
-       for (int i = 10; i <= 100000000; i *= 10) {
+       for (long i = 10; i <= 100000000; i *= 10) {
             if (abs(longitude) < i) {
               lon += "0";
             }
@@ -456,42 +490,10 @@ void GPS_UBLOX_Class::packatize(){
     }*/
     lon += abs(longitude);
     lon += " ";
-      String alt; //-0007736
-          if (altitude > 0) {
-        alt += "+";
-      }
-      if (altitude < 0) {
-        alt += "-";
-      }
-       for (int i = 10; i <= 1000000; i *= 10) {
-            if (abs(altitude) < i) {
-              alt += "0";
-            }
-          }
-      /*    if (abs(altitude) < 1000000) {
-            alt += "0";
-            if (abs(altitude) < 100000) {
-              alt += "0";
-              if (abs(altitude) < 10000) {
-                alt += "0";
-                if (abs(altitude) < 1000) {
-                  alt += "0";
-                  if (abs(altitude) < 100) {
-                    alt += "0";
-                    if (abs(altitude) < 10) {
-                      alt += "0";
-                  }
-                }   
-              }
-            }
-          }
-        }*/
-    alt += abs(altitude);
-    alt += " ";
-          String ns; //-0007736
-          for (int i = 10; i <= 100000000; i *= 10) {
-            if (abs(nanoseconds) < i) {
-              ns += "0";
+		       String nsD = ""; //-0007736
+          for (long i = 10; i <= 100000000; i *= 10) {
+            if (abs(nanosecondsD) < i) {
+              nsD += "0";
             }
           }
     /*  if (abs(nanoseconds) < 100000000) {
@@ -518,9 +520,103 @@ void GPS_UBLOX_Class::packatize(){
         }
       }
     }*/
-    ns += abs(nanoseconds);
- thisDatax = date + time + unitid + lat + lon + alt + ns;
+	//Serial.println("ck:2");
+    nsD += abs(nanosecondsD);
+
+	String alt =  ""; //-0007736
+          if (altitude > 0) {
+        alt += "+";
+      }
+      if (altitude < 0) {
+        alt += "-";
+      }
+       for (long i = 10; i <= 1000000; i *= 10) {
+            if (abs(altitude) < i) {
+              alt = alt + "0";
+            }
+          }
+      /*    if (abs(altitude) < 1000000) {
+            alt += "0";
+            if (abs(altitude) < 100000) {
+              alt += "0";
+              if (abs(altitude) < 10000) {
+                alt += "0";
+                if (abs(altitude) < 1000) {
+                  alt += "0";
+                  if (abs(altitude) < 100) {
+                    alt += "0";
+                    if (abs(altitude) < 10) {
+                      alt += "0";
+                  }
+                }   
+              }
+            }
+          }
+        }*/
+	   long absaltitude = abs(altitude);
+	   String altitudestring = String(absaltitude);
+//	   alt += abs(altitude);
+	   alt += altitudestring;
+		
+//alt = alt + " ";
+
+	String nsD2 = ""; //-0007736
+          for (long i = 10; i <= 100000000; i *= 10) {
+            if (abs(nanosecondsD2) < i) {
+              nsD2 += "0";
+            }
+          }
+    /*  if (abs(nanoseconds) < 100000000) {
+          ns += "0";
+        if (abs(nanoseconds) < 10000000) {
+          ns += "0";
+          if (abs(nanoseconds) < 1000000) {
+            ns += "0";
+            if (abs(nanoseconds) < 100000) {
+              ns += "0";
+              if (abs(nanoseconds) < 10000) {
+                ns += "0";
+                if (abs(nanoseconds) < 1000) {
+                  ns += "0";
+                  if (abs(nanoseconds) < 100) {
+                    ns += "0";
+                    if (abs(nanoseconds) < 10) {
+                      ns += "0";
+                  }
+                }   
+              }
+            }
+          }
+        }
+      }
+    }*/
+	//Serial.println("ck:2");
+    nsD2 += abs(nanosecondsD2);
+	delay(1);
+	Serial.print(date);
+	Serial.print(time);
+	Serial.print(unitid);
+	Serial.print(lat);
+	Serial.print(lon);
+	Serial.print(alt);
+	Serial.print(" ");
+//	Serial.println(altitude);
+//	Serial.println(absaltitude);
+//	Serial.println(alt);
+//	Serial.println(altitudestring);
+	Serial.println(nsD);  
+//	Serial.println(nsD2);
+	thisDatax.concat(date);
+	thisDatax.concat(time);
+	thisDatax.concat(unitid);
+	thisDatax.concat(lat);
+	thisDatax.concat(lon);
+	thisDatax.concat(alt);
+	thisDatax.concat(" ");
+	thisDatax.concat(nsD); //thisDatax = date + time + unitid + lat + lon + alt + ns;
+	//thisDatax.concat(nsD2);
 	thisDatax.toCharArray(thisData, 65);
+	//thisDatax = date + time + unitid + lat + lon + alt + ns;
 }
 
 /****************************************************************
@@ -558,12 +654,12 @@ String GPS_UBLOX_Class::GPSTOWtoUTC(long secs)
  // to the UTC "packed integer" format
 
  //Useful constants
- #define SEC_PER_DAY 86400
- #define SEC_PER_HOUR 3600
- #define SEC_PER_MINUTE 60
- #define HOURS_PER_DAY 24
- #define MINUTES_PER_DAY 1440
- #define MINUTES_PER_HOUR 60
+ long SEC_PER_DAY = 86400;
+ long SEC_PER_HOUR = 3600;
+ long SEC_PER_MINUTE = 60;
+ long HOURS_PER_DAY = 24;
+ long MINUTES_PER_DAY = 1440;
+ long MINUTES_PER_HOUR = 60;
  String UTC_pack;
  long sleft;
  int offsetday = secs/SEC_PER_DAY;//today is tuesday
